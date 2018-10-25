@@ -1,11 +1,12 @@
-FROM golang:alpine
+FROM golang
 
-WORKDIR /app
-COPY . /app
-RUN apk add git --no-cache
-RUN go get ./... && go build .
+WORKDIR /go/src/app
+COPY . .
 
-FROM alpine
+RUN go get -d -v ./... && go install -v ./...
 
-COPY --from=0 /app/app /app
+FROM debian
+
+RUN apt-get update && apt-get install -y ca-certificates
+COPY --from=0 /go/bin/app /app
 CMD ["/app"]

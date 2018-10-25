@@ -24,7 +24,7 @@ func main() {
 	}
 	room := "!KSkuPboAFRAJICRXFr:matrix.org"
 	reg, _ := regexp.Compile(`(?i)you`)
-	b.Listen(
+	b.React(
 		func(e neo.Event) bool {
 			return reg.MatchString(e.Content.Body)
 		},
@@ -32,7 +32,7 @@ func main() {
 			ctx.Logger.Info("recieved message", zap.String("content", ctx.Event.Content.Body), zap.Any("event", ctx.Event))
 			return ctx.SendText("Did you mean: \"" + reg.ReplaceAllString(ctx.Event.Content.Body, "we") + "\"")
 		})
-	b.Listen(
+	b.React(
 		func(e neo.Event) bool {
 			return true
 		},
@@ -40,10 +40,5 @@ func main() {
 			ctx.Logger.Info("recieved message", zap.String("content", ctx.Event.Content.Body), zap.Any("event", ctx.Event))
 			return nil
 		})
-	b.Run(room, context.Background())
-	// con := b.Context(room)
-	// for {
-	// 	con.SendText("We are starving")
-	// 	time.Sleep(time.Minute)
-	// }
+	b.Run(context.Background(), room)
 }

@@ -10,8 +10,13 @@ import (
 	"time"
 )
 
+// Event is a wrapper over the mautrix.Event type to permit use without needing to import mautrix
 type Event *mautrix.Event
+
+// MatchFunc is used to detect whether the bot should respond to an event
 type MatchFunc func(event Event) bool
+
+// HandlerFunc is executed when the corresponding MatchFunc returned true
 type HandlerFunc func(c *Context) error
 
 type handler struct {
@@ -19,6 +24,7 @@ type handler struct {
 	Handler HandlerFunc
 }
 
+// A Bot is the main component of the framework. This struct contains all neccesary informations to interact with a room
 type Bot struct {
 	logger   *zap.Logger
 	client   *mautrix.Client
@@ -26,6 +32,7 @@ type Bot struct {
 	interval time.Duration
 }
 
+// Configuration is used to initialy configure the bot. Note: changing the configuration after creation will have _no_ effect
 type Configuration struct {
 	HomeServer      string
 	UserID          string
@@ -34,6 +41,7 @@ type Configuration struct {
 	PollingInterval time.Duration
 }
 
+// NewBot constructs a new Bot with the gien configuration
 func NewBot(c *Configuration) (*Bot, error) {
 	if c == nil || c.HomeServer == "" || c.AccessToken == "" || c.UserID == "" {
 		return nil, errors.New("Configuration must at least include: HomeServer, AccessToken and UserID")
@@ -65,12 +73,14 @@ func NewBot(c *Configuration) (*Bot, error) {
 	}, nil
 }
 
-func (b *Bot) Listen(m MatchFunc, h HandlerFunc) {
+// React is used to route specific events to their respecitve handlers
+func (b *Bot) React(m MatchFunc, h HandlerFunc) {
 	hid := uuid.New()
 	b.handlers[hid] = &handler{Match: m, Handler: h}
 	b.logger.Info("registered handler", zap.String("handler_id", hid.String()))
 }
 
+// HandleEvent enumerates all handlers and fires the ones matching
 func (b *Bot) HandleEvent(e *mautrix.Event) error {
 	for hid, h := range b.handlers {
 		if h.Match(Event(e)) {
@@ -84,13 +94,16 @@ func (b *Bot) HandleEvent(e *mautrix.Event) error {
 	return nil
 }
 
+// Context returns a generic Context without a corresponding event.
+// This can be used to independently send messages without needing to react to an Event
 func (b *Bot) Context(room string) *Context {
 	return b.genCtx(&mautrix.Event{
 		RoomID: room,
 	})
 }
 
-func (b *Bot) Run(room string, ctx context.Context) error {
+// Run listens for new events on the specified channel and is responsible for dispatching events to the handlers
+func (b *Bot) Run(ctx context.Context, room string) error {
 	s, err := b.client.SyncRequest(64, "", "", false, "")
 	if err != nil {
 		b.logger.Error("could not do inital sync", zap.Error(err))

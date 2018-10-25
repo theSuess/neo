@@ -12,6 +12,7 @@ import (
 func main() {
 	username := os.Getenv("BOT_NAME")
 	accesskey := os.Getenv("BOT_TOKEN")
+	room := os.Getenv("BOT_ROOM")
 	homeserver := "https://chat.weho.st"
 	b, err := neo.NewBot(&neo.Configuration{
 		HomeServer:  homeserver,
@@ -22,7 +23,6 @@ func main() {
 		fmt.Println(err)
 		return
 	}
-	room := "!KSkuPboAFRAJICRXFr:matrix.org"
 	reg, _ := regexp.Compile(`(?i)you`)
 	b.React(
 		func(e neo.Event) bool {
